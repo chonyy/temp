@@ -181,7 +181,10 @@ class BiLSTM_CRF(object):
             label_list.extend(label_list_)
         label2tag = {}
         for tag, label in self.tag2label.items():
-            label2tag[label] = tag if label != 0 else label
+            if label != 0:
+                label2tag[label] = tag 
+            else:
+                label2tag[label] = 'O' 
         tag = [label2tag[label] for label in label_list[0]]
         return tag
 

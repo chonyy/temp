@@ -1,17 +1,72 @@
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import numpy as np
 import os, argparse, time, random
 from model import BiLSTM_CRF
 from utils import str2bool, get_logger, get_entity
 from data import read_corpus, read_dictionary, tag2label, random_embedding, read_corpus_custom
 
+def FormatOutput(y_pred, testdata_list, testdata_article_id_list):
+    r"""
+    Format data.
+    """
+    output="article_id\tstart_position\tend_position\tentity_text\tentity_type\n"
+    for test_id, article_pred in enumerate(y_pred):
+        pos=0
+        start_pos=None
+        end_pos=None
+        entity_text=None
+        entity_type=None
+        # print(article_pred)
+        for pred_id, pred in enumerate(article_pred):
+            # print('pred', pred)
+            if pred[0]=='B':
+                start_pos=pos
+                entity_type=pred[2:]
+            elif start_pos is not None and pred[0]=='I' and pred_id == len(article_pred) - 1:
+                end_pos=pos
+                entity_text=''.join([testdata_list[test_id][position][0] for position in range(start_pos,end_pos+1)])
+                line=str(testdata_article_id_list[test_id])+'\t'+str(start_pos)+'\t'+str(end_pos+1)+'\t'+entity_text+'\t'+entity_type
+                output+=line+'\n'
+            elif start_pos is not None and pred[0]=='I' and article_pred[pred_id+1][0]=='O':
+                end_pos=pos
+                entity_text=''.join([testdata_list[test_id][position][0] for position in range(start_pos,end_pos+1)])
+                line=str(testdata_article_id_list[test_id])+'\t'+str(start_pos)+'\t'+str(end_pos+1)+'\t'+entity_text+'\t'+entity_type
+                output+=line+'\n'
+            
+            pos+=1     
+    output_path = 'output.tsv'
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(output)
+
+    return output
+
+def readToData2(path):
+    lines = None
+    with open(path, 'r', encoding='utf8') as f:
+        lines = f.readlines()
+
+    data = []
+    data_tmp = []
+    for idx, l in enumerate(lines):
+    
+        if(l == None or len(l) == 1):
+            continue
+        elif(l.startswith('article')):
+            data_tmp = []
+        elif(l.startswith('-----')):
+            data.append(data_tmp)
+        else:
+            for c in l:
+                data_tmp.append(c)
+    return data
 
 ## Session configuration
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # default: 0
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.per_process_gpu_memory_fraction = 0.2  # need ~700MB GPU memory
+# config.gpu_options.per_process_gpu_memory_fraction = 0.2  # need ~700MB GPU memory
 
 
 ## hyperparameters
@@ -19,7 +74,7 @@ parser = argparse.ArgumentParser(description='BiLSTM-CRF for Chinese NER task')
 parser.add_argument('--train_data', type=str, default='data_path', help='train data source')
 parser.add_argument('--test_data', type=str, default='data_path', help='test data source')
 parser.add_argument('--batch_size', type=int, default=32, help='#sample of each minibatch')
-parser.add_argument('--epoch', type=int, default=200, help='#epoch of training')
+parser.add_argument('--epoch', type=int, default=500, help='#epoch of training')
 parser.add_argument('--hidden_dim', type=int, default=300, help='#dim of hidden state')
 parser.add_argument('--optimizer', type=str, default='Adam', help='Adam/Adadelta/Adagrad/RMSProp/Momentum/SGD')
 parser.add_argument('--CRF', type=str2bool, default=True, help='use CRF at the top layer. if False, use Softmax')
@@ -49,8 +104,8 @@ else:
 if args.mode != 'demo':
     # train_path = os.path.join('.', args.train_data, 'train_data')
     # test_path = os.path.join('.', args.test_data, 'test_data')
-    train_path = 'train.data'
-    test_path = 'test.data'
+    train_path = 'sample3.data'
+    test_path = 'train.data'
     train_data = read_corpus_custom(train_path)
     # print(train_data)
     test_data = read_corpus_custom(test_path); test_size = len(test_data)
@@ -112,19 +167,38 @@ elif args.mode == 'demo':
     with tf.Session(config=config) as sess:
         print('============= demo =============')
         saver.restore(sess, ckpt_file)
-        while(1):
-            print('Please input your sentence:')
-            demo_sent = input()
-            if demo_sent == '' or demo_sent.isspace():
-                print('See you next time!')
-                break
-            else:
-                demo_sent = list(demo_sent.strip())
-                demo_data = [(demo_sent, ['O'] * len(demo_sent))]
-                tag = model.demo_one(sess, demo_data)
-                # PER, LOC, ORG = get_entity(tag, demo_sent)
-                TIME = get_entity(tag, demo_sent)
-                # print('PER: {}\nLOC: {}\nORG: {}'.format(PER, LOC, ORG))
-                print('TIME: {}'.format(TIME))
+        dataList = readToData2('dev.txt')
+        answer = []
+        for idx, article in enumerate(dataList):
+            demo_sent = article
+            demo_data = [(demo_sent, ['O'] * len(demo_sent))]
+            tag = model.demo_one(sess, demo_data)
+            # print(tag)
+            print(idx, len(tag))
+            answer.append(tag)
+
+        print(len(answer))
+        print(len(answer[0]))
+        print(len(dataList))
+        print(len(dataList[0]))
+        FormatOutput(answer, dataList, np.arange(len(dataList)))
+
+        # while(1):
+        #     print('Please input your sentence:')
+        #     demo_sent = input()
+        #     if demo_sent == '' or demo_sent.isspace():
+        #         print('See you next time!')
+        #         break
+        #     else:
+        #         demo_sent = list(demo_sent.strip())
+        #         demo_data = [(demo_sent, ['O'] * len(demo_sent))]
+        #         print(len(demo_data))
+        #         print(demo_data)
+        #         tag = model.demo_one(sess, demo_data)
+        #         print(tag)
+        #         # PER, LOC, ORG = get_entity(tag, demo_sent)
+        #         TIME = get_entity(tag, demo_sent)
+        #         # print('PER: {}\nLOC: {}\nORG: {}'.format(PER, LOC, ORG))
+        #         print('TIME: {}'.format(TIME))
 
 
