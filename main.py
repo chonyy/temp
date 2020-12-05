@@ -4,7 +4,7 @@ import numpy as np
 import os, argparse, time, random
 from model import BiLSTM_CRF
 from utils import str2bool, get_logger, get_entity
-from data import read_corpus, read_dictionary, tag2label, random_embedding, read_corpus_custom
+from data import read_corpus, read_dictionary, tag2label, random_embedding, read_corpus_custom_split, read_corpus_custom_whole
 
 def FormatOutput(y_pred, testdata_list, testdata_article_id_list):
     r"""
@@ -73,7 +73,7 @@ config.gpu_options.allow_growth = True
 parser = argparse.ArgumentParser(description='BiLSTM-CRF for Chinese NER task')
 parser.add_argument('--train_data', type=str, default='data_path', help='train data source')
 parser.add_argument('--test_data', type=str, default='data_path', help='test data source')
-parser.add_argument('--batch_size', type=int, default=32, help='#sample of each minibatch')
+parser.add_argument('--batch_size', type=int, default=64, help='#sample of each minibatch')
 parser.add_argument('--epoch', type=int, default=500, help='#epoch of training')
 parser.add_argument('--hidden_dim', type=int, default=300, help='#dim of hidden state')
 parser.add_argument('--optimizer', type=str, default='Adam', help='Adam/Adadelta/Adagrad/RMSProp/Momentum/SGD')
@@ -92,7 +92,7 @@ args = parser.parse_args()
 
 ## get char embeddings
 # word2id = read_dictionary(os.path.join('.', args.train_data, 'word2id.pkl'))
-word2id = read_dictionary('word.pkl')
+word2id = read_dictionary('word2.pkl')
 if args.pretrain_embedding == 'random':
     embeddings = random_embedding(word2id, args.embedding_dim)
 else:
@@ -106,9 +106,9 @@ if args.mode != 'demo':
     # test_path = os.path.join('.', args.test_data, 'test_data')
     train_path = 'sample3.data'
     test_path = 'train.data'
-    train_data = read_corpus_custom(train_path)
+    train_data = read_corpus_custom_whole(train_path)
     # print(train_data)
-    test_data = read_corpus_custom(test_path); test_size = len(test_data)
+    test_data = read_corpus_custom_whole(test_path); test_size = len(test_data)
 
 
 ## paths setting
