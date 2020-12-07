@@ -4,7 +4,7 @@ import numpy as np
 import os, argparse, time, random
 from model import BiLSTM_CRF
 from utils import str2bool, get_logger, get_entity
-from data import read_corpus, read_dictionary, tag2label, random_embedding, read_corpus_custom_split, read_corpus_custom_whole
+from data import read_corpus, read_dictionary, tag2label, random_embedding, read_corpus_custom_split, read_corpus_custom_whole, read_corpus_custom_char
 
 def FormatOutput(y_pred, testdata_list, testdata_article_id_list):
     r"""
@@ -92,7 +92,7 @@ args = parser.parse_args()
 
 ## get char embeddings
 # word2id = read_dictionary(os.path.join('.', args.train_data, 'word2id.pkl'))
-word2id = read_dictionary('word2.pkl')
+word2id = read_dictionary('word.pkl')
 if args.pretrain_embedding == 'random':
     embeddings = random_embedding(word2id, args.embedding_dim)
 else:
@@ -106,9 +106,9 @@ if args.mode != 'demo':
     # test_path = os.path.join('.', args.test_data, 'test_data')
     train_path = 'sample3.data'
     test_path = 'train.data'
-    train_data = read_corpus_custom_whole(train_path)
+    train_data = read_corpus_custom_char(train_path)
     # print(train_data)
-    test_data = read_corpus_custom_whole(test_path); test_size = len(test_data)
+    test_data = read_corpus_custom_char(test_path); test_size = len(test_data)
 
 
 ## paths setting

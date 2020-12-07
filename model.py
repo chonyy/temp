@@ -277,6 +277,9 @@ class BiLSTM_CRF(object):
                                                  feed_dict=feed_dict)
             label_list = []
             for logit, seq_len in zip(logits, seq_len_list):
+                # print('info')
+                # print(len(logit[:seq_len]))
+                # print(len(transition_params))
                 viterbi_seq, _ = viterbi_decode(logit[:seq_len], transition_params)
                 label_list.append(viterbi_seq)
             return label_list, seq_len_list

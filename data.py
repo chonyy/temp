@@ -93,9 +93,9 @@ def read_corpus_custom_split(corpus_path):
         if(line[0] == '：'):
             sent_, tag_ = [], []
         elif (line[0] == '！' or line[0] == '？' or line[0] == '。'):
-            # print(len(sent_))
-            data.append((sent_, tag_))
-            sent_, tag_ = [], []
+            if(len(sent_) != 0):
+                data.append((sent_, tag_))
+                sent_, tag_ = [], []
         else:
             [char, label] = line.strip().split()
             # print('char', char)
@@ -129,6 +129,33 @@ def read_corpus_custom_whole(corpus_path):
             # print(len(sent_) - 2)
             data.append((sent_[:-2], tag_[:-2]))
             sent_, tag_ = [], []
+    if(([], []) in data):
+        data.remove(([], []))
+    return data
+
+def read_corpus_custom_char(corpus_path):
+    data = []
+    with open(corpus_path, encoding='utf-8') as fr:
+        lines = fr.readlines()
+    sent_, tag_ = [], []
+    for idx, line in enumerate(lines):
+        if line == '\n':
+            continue
+        if line[0] == '。' or line[0] == '？':
+            [char, label] = line.strip().split()
+            sent_.append(char)
+            tag_.append(label)
+
+            if(idx == len(lines) - 2):
+                data.append((sent_, tag_))
+                sent_, tag_ = [], []
+            elif(lines[idx+3][0] == '：' or lines[idx+4][0] == '：'):
+                data.append((sent_, tag_))
+                sent_, tag_ = [], []
+        else:
+            [char, label] = line.strip().split()
+            sent_.append(char)
+            tag_.append(label)
     if(([], []) in data):
         data.remove(([], []))
     return data
