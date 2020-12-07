@@ -141,7 +141,8 @@ def read_corpus_custom_whole(corpus_path):
     return data
 
 data = read_corpus_custom_whole('train.data')
-print(data[-5:])
+for d in data[100:110]:
+    print(d)
 
 # vocab_build('word2.pkl', 'sample3.data', 3)
 
