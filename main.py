@@ -4,7 +4,15 @@ import numpy as np
 import os, argparse, time, random
 from model import BiLSTM_CRF
 from utils import str2bool, get_logger, get_entity
-from data import read_corpus, read_dictionary, tag2label, random_embedding, read_corpus_custom_split, read_corpus_custom_whole, read_corpus_custom_char
+from data import read_corpus, read_dictionary, tag2label, random_embedding, read_corpus_custom_split, read_corpus_custom_whole, read_corpus_custom_char, read_corpus_custom
+from kashgari.embeddings import BERTEmbedding
+from kashgari.tasks.labeling import BiLSTM_CRF_Model
+import kashgari
+import sys
+import warnings
+
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
 
 def FormatOutput(y_pred, testdata_list, testdata_article_id_list):
     r"""
@@ -83,7 +91,7 @@ parser.add_argument('--clip', type=float, default=5.0, help='gradient clipping')
 parser.add_argument('--dropout', type=float, default=0.5, help='dropout keep_prob')
 parser.add_argument('--update_embedding', type=str2bool, default=True, help='update embedding during training')
 parser.add_argument('--pretrain_embedding', type=str, default='random', help='use pretrained char embedding or init it randomly')
-parser.add_argument('--embedding_dim', type=int, default=300, help='random init char embedding_dim')
+parser.add_argument('--embedding_dim', type=int, default=512, help='random init char embedding_dim')
 parser.add_argument('--shuffle', type=str2bool, default=True, help='shuffle training data before each epoch')
 parser.add_argument('--mode', type=str, default='demo', help='train/test/demo')
 parser.add_argument('--demo_model', type=str, default='1521112368', help='model for test and demo')
@@ -95,6 +103,9 @@ args = parser.parse_args()
 word2id = read_dictionary('word.pkl')
 if args.pretrain_embedding == 'random':
     embeddings = random_embedding(word2id, args.embedding_dim)
+    # embeddings = BERTEmbedding("chinese", sequence_length=50, task=kashgari.LABELING)
+    print('embeddings')
+    print(len(embeddings))
 else:
     embedding_path = 'pretrain_embedding.npy'
     embeddings = np.array(np.load(embedding_path), dtype='float32')
@@ -106,9 +117,9 @@ if args.mode != 'demo':
     # test_path = os.path.join('.', args.test_data, 'test_data')
     train_path = 'sample3.data'
     test_path = 'train.data'
-    train_data = read_corpus_custom_char(train_path)
+    train_data = read_corpus_custom(train_path)
     # print(train_data)
-    test_data = read_corpus_custom_char(test_path); test_size = len(test_data)
+    test_data = read_corpus_custom(test_path); test_size = len(test_data)
 
 
 ## paths setting
@@ -167,7 +178,7 @@ elif args.mode == 'demo':
     with tf.Session(config=config) as sess:
         print('============= demo =============')
         saver.restore(sess, ckpt_file)
-        dataList = readToData2('dev.txt')
+        dataList = readToData2('test.txt')
         answer = []
         for idx, article in enumerate(dataList):
             demo_sent = article
@@ -185,7 +196,7 @@ elif args.mode == 'demo':
 
         # while(1):
         #     print('Please input your sentence:')
-        #     demo_sent = input()
+        #     demo_sent = input()asd
         #     if demo_sent == '' or demo_sent.isspace():
         #         print('See you next time!')
         #         break

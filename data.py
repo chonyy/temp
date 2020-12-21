@@ -238,8 +238,11 @@ def random_embedding(vocab, embedding_dim):
     :param embedding_dim:
     :return:
     """
-    embedding_mat = np.random.uniform(-0.25, 0.25, (len(vocab), embedding_dim))
-    embedding_mat = np.float32(embedding_mat)
+    # embedding_mat = np.random.uniform(-0.25, 0.25, (len(vocab)+1, embedding_dim))
+    # embedding_mat = np.float32(embedding_mat)
+    with open('embedding.pkl', 'rb') as f:
+        embedding_mat = pickle.load(f)
+    print('word2id')
     return embedding_mat
 
 

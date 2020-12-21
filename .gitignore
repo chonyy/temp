@@ -3,3 +3,5 @@
 .idea/
 data_path_save
 env
+cna.cbow.cwe_p.tar_g.512d.0.txt
+word2vec.pkl
